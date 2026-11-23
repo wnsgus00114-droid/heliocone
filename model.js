@@ -1,6 +1,9 @@
 "use strict";
-const FIRST_DAY = "2026-10-26";
-const LAST_DAY = "2026-11-09";
+const TIME_ZONE = "Asia/Seoul";
+const TIME_ZONE_LABEL = "KST · UTC+9";
+const todayInSeoul = () => new Intl.DateTimeFormat("sv-SE",{timeZone:TIME_ZONE,year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+let LAST_DAY = todayInSeoul();
+let FIRST_DAY = new Date(Date.parse(`${LAST_DAY}T00:00:00Z`)-14*86400000).toISOString().slice(0,10);
 const SITES = {
   A: {name:"서해 발전소", label:"변동 주의", detail:"11시부터 12시까지 예측 GHI 감소", owner:"운영 담당 A"},
   B: {name:"해솔 발전소", label:"수신 지연", detail:"입력 수신 지연으로 예측 제공 보류", owner:"미지정"},
@@ -17,7 +20,7 @@ const shortDate = day => day.replaceAll("-",".");
 const mean = values => values.length ? Math.round(values.reduce((sum,x)=>sum+x,0)/values.length) : null;
 const valuesOf = (rows,key) => rows.map(row=>row[key]).filter(Number.isFinite);
 const numberText = value => value == null ? "—" : String(value);
-const timeStamp = () => new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Shanghai",dateStyle:"short",timeStyle:"medium"}).format(new Date());
+const timeStamp = () => new Intl.DateTimeFormat("sv-SE",{timeZone:TIME_ZONE,dateStyle:"short",timeStyle:"medium"}).format(new Date());
 function settingsError(settings) {
   const min = settings.type === "weekly" ? shiftDay(FIRST_DAY,6) : FIRST_DAY;
   return !/^\d{4}-\d{2}-\d{2}$/.test(settings.day) || settings.day < min || settings.day > LAST_DAY
@@ -66,19 +69,19 @@ function buildReport(settings, events) {
   const holdCount=rows.filter(row=>row.predicted===null).length;
   if(holdCount) paragraphs.push(`B 현장은 ${shortDate(LAST_DAY).slice(5)} 입력 수신이 늦어 ${holdCount}개 시간대의 예측을 보류했습니다.`);
   if(!paragraphs.length) paragraphs.push(`선택 기간에 관측값 ${received}건을 수신했습니다. 예측 보류 건은 없습니다.`);
-  return {formatVersion:2,settings:{...settings},days,rows,series,bySite,summary:paragraphs.join(" "),checks:scopeEvents,
+  return {formatVersion:2,timeZoneLabel:TIME_ZONE_LABEL,settings:{...settings},days,rows,series,bySite,summary:paragraphs.join(" "),checks:scopeEvents,
     observed:mean(valuesOf(rows,"observed")),predicted:mean(valuesOf(rows,"predicted")),
     received,total:rows.length,rate:Math.round(received/rows.length*100)};
 }
 function csvText(report) {
   const header=["기록 유형","발전소","대상일","대상 시각","시간대","예측 기준","입력 수신","예측 GHI (W/m²)","관측 GHI (W/m²)","데이터 상태","담당자","처리 상태","확인 항목","조치 메모","기록 시각"];
-  const lines=report.rows.map(r=>["GHI",r.site,r.day,r.hour,"UTC+8",r.base,r.received,r.predicted,r.observed,r.state,"","","","",""]);
+  const lines=report.rows.map(r=>["GHI",r.site,r.day,r.hour,report.timeZoneLabel||"UTC+8",r.base,r.received,r.predicted,r.observed,r.state,"","","","",""]);
   if(report.formatVersion===2){
     header.push("다음 확인 사항");
     for(const row of lines) row.push("");
   }
   if(report.settings.inspection) for(const e of report.checks){
-    const row=["점검","B",e.day,"","UTC+8","","","","","수신 지연",e.owner,e.status,CHECKS.filter((_,i)=>e.checks[i]).join(" / "),e.memo,e.at];
+    const row=["점검","B",e.day,"",e.timeZoneLabel||report.timeZoneLabel||"UTC+8","","","","","수신 지연",e.owner,e.status,CHECKS.filter((_,i)=>e.checks[i]).join(" / "),e.memo,e.at];
     if(report.formatVersion===2) row.push(e.nextCheck??"");
     lines.push(row);
   }

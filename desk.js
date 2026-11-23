@@ -2,6 +2,14 @@
 const $ = (selector,root=document)=>root.querySelector(selector);
 const html = value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
 const paths={
+  sun:"M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.4 1.4m11.2 11.2L19 19M5 19l1.4-1.4M17.6 6.4 19 5M17 12a5 5 0 1 1-10 0 5 5 0 0 1 10 0z",
+  calendar:"M4 5h16v16H4z M8 3v4M16 3v4M4 10h16M8 14h2M14 14h2M8 17h2",
+  flask:"M9 3h6M10 3v7L4 19a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2l-6-9V3M8 15h8",
+  reset:"M3 4v6h6 M3 10a9 9 0 1 1 1 7",
+  alert:"M12 3 2 21h20L12 3z M12 9v5M12 17v.1",
+  activity:"M3 12h4l3-8 4 16 3-8h4",
+  search:"M16 16l5 5M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0z",
+  shield:"M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z m-4 9 3 3 5-6",
   document:"M6 3h8l4 4v14H6z M14 3v5h4 M9 12h6 M9 16h6",
   grid:"M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z",
   archive:"M3 4h18v5H3z M5 9v11h14V9 M9 13h6",
@@ -47,12 +55,15 @@ function saveRecord(prefix,entry) {
   const key=STORAGE+prefix+entry.id, value=JSON.stringify(entry);
   volatileStore.set(key,value);
   if(storageAvailable)try{localStorage.setItem(key,value);}catch{storageAvailable=false;storageWarning();}
+  renderOverview();
 }
 const reports=()=>records("report/");
 const events=()=>records("event/");
 const uid=()=>crypto.randomUUID?.()??`${Date.now()}-${Math.random().toString(36).slice(2)}`;
 let settings={...DEFAULT_SETTINGS}, currentView="", currentReport=null;
 let draftInspection=null, shownSites="all", detailSite=null, currentRead=null;
+let archiveQuery="", archiveType="all";
+const zoneOf=report=>report.timeZoneLabel||"UTC+8";
 let zoom={preview:"auto",reader:100};
 const zoomSteps=[25,50,75,100,125,150,175,200];
 let toastTimer;
@@ -74,9 +85,9 @@ function chart(series){
     return `<path d="${d}" fill="none" stroke="${color}" stroke-width="3" stroke-dasharray="${dash}"/>`+
       series.map((p,i)=>p[key]===null?"":`<circle cx="${x(i)}" cy="${y(p[key])}" r="3.5" fill="${key==="observed"?color:"#fff"}" stroke="${color}" stroke-width="2"/>`).join("");
   };
-  const grid=[0,200,400,600].map(v=>`<path d="M40 ${y(v)}H646" stroke="#dedbd3"/><text x="29" y="${y(v)+4}" text-anchor="end">${v}</text>`).join("");
+  const grid=[0,200,400,600].map(v=>`<path d="M40 ${y(v)}H646" stroke="#e5ebe8"/><text x="29" y="${y(v)+4}" text-anchor="end">${v}</text>`).join("");
   const labels=series.map((p,i)=>`<text x="${x(i)}" y="185" text-anchor="middle">${html(p.label)}</text>`).join("");
-  return `<svg viewBox="0 0 665 197" class="plot" role="img" aria-label="GHI 추이. 실선은 관측, 점선은 예측이며 빈 관측 구간은 결측입니다."><title>${html(series.map(p=>`${p.label} 관측 ${numberText(p.observed)}, 예측 ${numberText(p.predicted)}`).join(" / "))}</title>${grid}${labels}${line("predicted","#a34329","7 5")}${line("observed","#333b39","none")}</svg>`;
+  return `<svg viewBox="0 0 665 197" class="plot" role="img" aria-label="GHI 추이. 실선은 관측, 점선은 예측이며 빈 관측 구간은 결측입니다."><title>${html(series.map(p=>`${p.label} 관측 ${numberText(p.observed)}, 예측 ${numberText(p.predicted)}`).join(" / "))}</title>${grid}${labels}${line("predicted","#b77718","7 5")}${line("observed","#227764","none")}</svg>`;
 }
 const periodOf=r=>r.days.length===1?shortDate(r.days[0]):`${shortDate(r.days[0])} – ${shortDate(r.days.at(-1))}`;
 const titleOf=r=>r.settings.type==="daily"?"태양광 운영 일보":"태양광 운영 주보";
@@ -89,24 +100,24 @@ function handoffSummary(report,entry){
     <div class="record-box"><p class="next-check"><b>다음 확인 사항</b> ${html(entry.nextCheck||"미입력")}</p>
       <p><b>점검 상태</b> ${html(entry.status)}${reading?` · <b>수신 상태</b> ${html(reading.state)}`:""}</p>
       <p><b>조치 메모</b> ${html(entry.memo||"미입력")}</p>
-      <small>${html(entry.at)} (UTC+8) · 확인 항목 ${entry.checks.filter(Boolean).length}/3 · 기간 내 이력 ${report.checks.length}건</small>
+      <small>${html(entry.at)} (${html(entry.timeZoneLabel||zoneOf(report))}) · 확인 항목 ${entry.checks.filter(Boolean).length}/3 · 기간 내 이력 ${report.checks.length}건</small>
     </div></section>`;
 }
 function paper(report,issue){
   const {settings:s}=report, latest=report.checks.at(-1);
   const heading=(n,text,aside="")=>`<div class="section-title"><h3><em>${n}</em>${text}</h3>${aside}</div>`;
   const metrics=[[numberText(report.observed),"W/m²","평균 관측 GHI"],[numberText(report.predicted),"W/m²","평균 예측 GHI"],[report.rate,"%","관측 확보율"]];
-  const trend=s.trend?`<section>${heading("02",s.type==="daily"?"시간대별 일사량":"일별 평균 일사량",legend())}<div class="chart-unit">GHI (W/m²)</div>${chart(report.series)}<p class="paper-note">수신된 값의 단순 평균 · 결측 구간 제외 · 일별 예측 기준 08:00 (UTC+8)</p></section>`:"";
+  const trend=s.trend?`<section>${heading("02",s.type==="daily"?"시간대별 일사량":"일별 평균 일사량",legend())}<div class="chart-unit">GHI (W/m²)</div>${chart(report.series)}<p class="paper-note">수신된 값의 단순 평균 · 결측 구간 제외 · 일별 예측 기준 08:00 (${zoneOf(report)})</p></section>`:"";
   let inspection="";
   if(s.inspection && report.formatVersion!==2){
-    inspection=`<section>${heading(s.trend?"04":"03","현장 점검 기록")}<div class="record-box">${latest?`<strong>B 현장 · ${html(latest.status)} · ${html(latest.owner)}</strong><p>${html(latest.memo||"조치 메모 미입력")}</p><small>${html(latest.at)} (UTC+8) · 확인 항목 ${latest.checks.filter(Boolean).length}/3 · 기간 내 이력 ${report.checks.length}건</small>`:"선택한 현장과 기간에 등록된 점검 기록이 없습니다."}</div></section>`;
+    inspection=`<section>${heading(s.trend?"04":"03","현장 점검 기록")}<div class="record-box">${latest?`<strong>B 현장 · ${html(latest.status)} · ${html(latest.owner)}</strong><p>${html(latest.memo||"조치 메모 미입력")}</p><small>${html(latest.at)} (${html(latest.timeZoneLabel||zoneOf(report))}) · 확인 항목 ${latest.checks.filter(Boolean).length}/3 · 기간 내 이력 ${report.checks.length}건</small>`:"선택한 현장과 기간에 등록된 점검 기록이 없습니다."}</div></section>`;
   }
   const siteRows=report.bySite.map(v=>`<tr><td>${v.site} 현장 · ${SITES[v.site].name}</td><td>${v.received} / ${v.total}건</td><td>${v.held}건</td><td>${v.held?"수신 지연":v.received<v.total?"관측 결측":"수신 정상"}</td></tr>`).join("");
   const dense = s.site==="all" || s.note.trim() || (s.inspection && latest);
   return `<article class="paper${dense?" dense":""}" aria-label="${titleOf(report)}">
     <div class="letterhead"><div class="letter-brand"><img src="mark.svg" alt="">HelioCone</div><div>FIELD OPERATIONS<br><b>${s.type==="daily"?"DAILY REPORT":"WEEKLY REPORT"}</b></div></div>
     <div class="doc-heading"><div><p class="doc-kicker">태양광 발전소 운영 기록</p><h2>${titleOf(report)}</h2></div><div class="paper-stamp">운영<br>레포트</div></div>
-    <div class="doc-meta"><span>대상 현장 <b>${scopeName(s.site)}</b></span><span>보고 기간 <b>${periodOf(report)}</b></span><span>작성 부서 <b>SunChip 운영팀</b></span><span>자료 구분 <b>가상 운영 데이터 · UTC+8</b></span></div>
+    <div class="doc-meta"><span>대상 현장 <b>${scopeName(s.site)}</b></span><span>보고 기간 <b>${periodOf(report)}</b></span><span>작성 부서 <b>SunChip 운영팀</b></span><span>자료 구분 <b>가상 운영 데이터 · ${zoneOf(report)}</b></span></div>
     ${s.inspection && report.formatVersion===2?handoffSummary(report,latest):""}
     <section>${heading("01","운영 요약")}<div class="metrics">${metrics.map(([v,u,l])=>`<div><span>${l}</span><strong>${v}<small>${u}</small></strong></div>`).join("")}</div><p class="summary">${html(report.summary)}</p></section>
     ${trend}<section>${heading(s.trend?"03":"02","데이터 수신 현황")}<table class="doc-table"><thead><tr><th>발전소</th><th>관측 확보 / 예정</th><th>예측 보류</th><th>수신 상태</th></tr></thead><tbody>${siteRows}</tbody></table></section>
@@ -117,7 +128,7 @@ function paper(report,issue){
 function toolbar(mode) {
   const read=mode==="reader";
   const button=(action,label,glyph)=>`<button class="icon-btn" data-action="${action}" data-mode="${mode}" aria-label="${label}" title="${label}">${icon(glyph)}</button>`;
-  return `<div class="toolstrip"><span class="tool-label">${icon(read?"document":"preview")} ${read?"A4 세로":"레포트 미리보기"}</span><div class="zoom-tools">
+  return `<div class="toolstrip"><span class="tool-label">${icon(read?"document":"preview")} ${read?"A4 세로":"레포트 미리보기"}${read?"":'<span class="preview-badge">자동 반영</span>'}</span><div class="zoom-tools">
     ${button("smaller","축소","minus")}<button class="scale" title="너비에 맞추기" aria-label="문서 너비에 맞추기" data-action="fit" data-mode="${mode}"></button>${button("larger","확대","plus")}
     ${read?"":`<i class="separator"></i><button class="text-btn" data-action="expand" title="미리보기 크게 보기">${icon("expand")}<span>크게 보기</span></button>`}</div></div>`;
 }
@@ -132,7 +143,7 @@ function resizePaper(mode){
   const scope=mode==="reader"?$("#reader-tools"):work;
   const percent=Math.round(scale*100);
   const scaleButton=$(".scale",scope);
-  if(scaleButton){scaleButton.textContent=percent+"%";scaleButton.dataset.percent=percent;}
+  if(scaleButton){scaleButton.textContent=percent+"%";scaleButton.dataset.percent=percent;scaleButton.setAttribute("aria-label",`문서 너비에 맞추기, 현재 ${percent}%`);}
   const shrink=$('[data-action="smaller"]',scope),grow=$('[data-action="larger"]',scope);
   if(shrink)shrink.disabled=percent<=zoomSteps[0];
   if(grow)grow.disabled=percent>=zoomSteps.at(-1);
@@ -155,34 +166,34 @@ function showPrioritySite(){
   const inspectionActions={"미처리":"점검 열기","확인 중":"점검 이어가기","점검 기록 완료":"점검 기록 보기"};
   const action=key==="B"?(inspectionActions[status]||"점검 열기"):"예측 상세 보기";
   const hadFocus=box.contains(document.activeElement);
-  box.innerHTML=`<div class="priority-info"><h2>먼저 확인할 현장 <small>${shortDate(LAST_DAY)} · UTC+8</small></h2>
+  box.innerHTML=`<div class="priority-info"><h2>${icon("alert")} 확인이 필요한 현장이 있어요</h2>
     <div class="priority-name"><strong>${scopeName(key)}</strong><span class="status ${key}">${site.label}</span></div>
     <p>${html(reason)}</p>${inspection?.nextCheck?`<p class="priority-next"><b>다음 확인</b> ${html(inspection.nextCheck)}</p>`:""}</div>
     <div class="priority-action"><span>${html(inspection?.owner||(key==="B"?"담당자 미지정":site.owner))}${key==="B"?" · "+html(status):""}</span>
-    <a class="primary compact" href="#sites/${key}">${key} 현장 ${action} ${icon("arrow")}</a></div>`;
+    <a class="attention-btn" href="#sites/${key}">${key} 현장 ${action} </a></div>`;
   if(hadFocus)$("a",box).focus({preventScroll:true});
 }
 function studio(){
   const siteOptions=["A","B","C","all"].map(site=>`<option value="${site}" ${site===settings.site?"selected":""}>${scopeName(site)}</option>`).join("");
   work.innerHTML=`<section id="priority-site" class="priority-site" aria-label="먼저 확인할 현장"></section><div class="studio-grid"><form class="config" id="config">
-    <div class="panel-head"><h2>${icon("sliders")}레포트 설정</h2><span class="paper-size">A4</span></div>
+    <div class="panel-head"><div><h2>${icon("sliders")}레포트 설정</h2><p>필요한 내용을 골라 완성하세요.</p></div><span class="paper-size">A4</span></div>
     <div class="fields"><fieldset><legend>레포트 종류</legend><div class="segments">${[["daily","일간 레포트"],["weekly","주간 레포트"]].map(([v,l])=>`<label><input type="radio" name="type" value="${v}" ${settings.type===v?"checked":""}><span>${l}</span></label>`).join("")}</div></fieldset>
     <label class="field">대상 발전소<select name="site">${siteOptions}</select></label>
-    <label class="field">보고 기준일<input type="date" name="day" value="${html(settings.day)}" max="${LAST_DAY}" required></label><p class="hint" id="period-hint"></p>
+    <label class="field">보고 기준일<input type="date" name="day" value="${html(settings.day)}" max="${LAST_DAY}" aria-describedby="period-hint form-error" required></label><p class="hint" id="period-hint"></p>
     <div class="rule"></div><fieldset class="include"><legend>포함할 항목</legend>
-    <label><input type="checkbox" checked disabled><span>운영 요약 · 수신 현황</span><small>필수</small></label>
     <label><input type="checkbox" name="trend" ${settings.trend?"checked":""}>일사량 추이 그래프</label>
     <label><input type="checkbox" name="inspection" ${settings.inspection?"checked":""}>현장 점검 기록 · 인수인계 요약</label></fieldset>
     <details class="memo-entry" ${settings.note?"open":""}><summary>운영자 메모 <small>선택</small></summary><label><span class="sr-only">운영자 메모</span><textarea name="note" maxlength="160" rows="3" placeholder="보고서에 남길 내용을 입력하세요.">${html(settings.note)}</textarea></label></details>
-    <p id="form-error" role="alert"></p><button class="primary generate" type="submit">${icon("fileplus")}레포트 생성${icon("arrow")}</button><p class="save-hint">${icon("archive")}생성한 문서는 보관함에 저장됩니다.</p></div>
+    <p id="form-error" role="alert"></p><button class="primary generate" type="submit">${icon("fileplus")}레포트 생성하기</button><p class="save-hint">${icon("archive")}생성 후 PDF와 CSV로 저장할 수 있어요.</p></div>
   </form><section class="preview" aria-label="문서 미리보기">${toolbar("preview")}<div class="paper-scroll" id="preview-scroll" tabindex="0" aria-label="레포트 미리보기 문서"></div></section></div>`;
   showPrioritySite();refreshPreview();
 }
 function refreshPreview(){
   const invalid=settingsError(settings),box=$("#preview-scroll");
   $("#form-error").textContent=invalid;
+  $("#config [name=day]").setAttribute("aria-invalid",String(Boolean(invalid)));
   $("#config [name=day]").min=settings.type==="daily"?FIRST_DAY:shiftDay(FIRST_DAY,6);
-  $("#period-hint").textContent=settings.type==="daily"?"가상 자료 기간  2026.10.26 – 11.09":invalid?"기준일까지 최근 7일을 집계합니다.":`집계 기간  ${shortDate(shiftDay(settings.day,-6))} – ${shortDate(settings.day)}`;
+  $("#period-hint").textContent=settings.type==="daily"?`가상 자료 기간  ${shortDate(FIRST_DAY)} – ${shortDate(LAST_DAY)}`:invalid?"기준일까지 최근 7일을 집계합니다.":`집계 기간  ${shortDate(shiftDay(settings.day,-6))} – ${shortDate(settings.day)}`;
   $(".generate").disabled=Boolean(invalid);
   $('[data-action="expand"]',work).disabled=Boolean(invalid);
   for(const control of work.querySelectorAll(".zoom-tools button"))control.disabled=Boolean(invalid);
@@ -193,7 +204,7 @@ function openReader(report,issue){
   currentRead={report,issue};
   $("#reader-kind").textContent=issue?`${issue.code} · 발행 문서`:"미발행 · 미리보기";
   $("#reader-title").textContent=titleOf(report);
-  $("#reader-tools").innerHTML=`${toolbar("reader")}<div class="reader-actions">${issue?`<span>${storageAvailable?"보관함에 저장됨":"현재 탭에 저장됨"} · ${html(issue.at)} (UTC+8)</span><div class="action-group"><button class="plain-btn" data-action="csv">${icon("down")}근거 CSV</button><button class="primary compact" data-action="print">${icon("print")}인쇄 / PDF</button></div>`:`<span>설정한 내용이 반영된 문서입니다.</span><button class="primary compact" data-action="issue">${icon("fileplus")}레포트 생성</button>`}</div>`;
+  $("#reader-tools").innerHTML=`${toolbar("reader")}<div class="reader-actions">${issue?`<span>${storageAvailable?"보관함에 저장됨":"현재 탭에 저장됨"} · ${html(issue.at)} (${html(zoneOf(report))})</span><div class="action-group"><button class="plain-btn" data-action="csv">${icon("down")}근거 CSV</button><button class="primary compact" data-action="print">${icon("print")}인쇄 / PDF</button></div>`:`<span>설정한 내용이 반영된 문서입니다.</span><button class="primary compact" data-action="issue">${icon("fileplus")}레포트 생성</button>`}</div>`;
   if(!reader.open)reader.showModal();
   $("#reader-scroll").scrollTo(0,0);
   mountPaper($("#reader-scroll"),report,issue,"reader");
@@ -211,11 +222,24 @@ function exportCSV(report){
   link.href=url;link.download=`HelioCone_${report.settings.site}_${report.settings.type}_${report.settings.day}.csv`;
   document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);
 }
-function archive(){
-  const kept=reports().reverse();
-  work.innerHTML=`<section class="ledger"><div class="ledger-heading"><h2>발행 문서 <strong>${kept.length}</strong></h2><button class="primary compact" data-action="new">${icon("fileplus")}새 레포트</button></div>${kept.length?`<div class="archive-list">${kept.map(v=>`<div class="archive-row"><div class="file-mark">${icon("document")}</div><div><small>${html(v.code)}</small><h3>${titleOf(v.report)} <span>· ${scopeName(v.report.settings.site)}</span></h3><p>${periodOf(v.report)} <span> / </span> 발행 ${html(v.at)} (UTC+8)</p></div><button class="plain-btn" data-open="${html(v.id)}">문서 열기 ${icon("arrow")}</button></div>`).join("")}</div>`:`<div class="empty-state">${icon("archive")}<h3>아직 발행한 레포트가 없습니다.</h3><p>레포트 작업실에서 문서를 생성하면 이곳에 보관됩니다.</p></div>`}</section>`;
+function archiveRows(){
+  const kept=reports().reverse(), query=archiveQuery.trim().toLocaleLowerCase();
+  const visible=kept.filter(v=>(archiveType==="all"||v.report.settings.type===archiveType)&&(!query||`${v.code} ${titleOf(v.report)} ${scopeName(v.report.settings.site)} ${periodOf(v.report)}`.toLocaleLowerCase().includes(query)));
+  const list=$("#archive-results");
+  $("#archive-result-count").textContent=`${visible.length}개 문서`;
+  list.innerHTML=visible.length?visible.map(v=>`<div class="archive-row"><div class="file-mark">${icon("document")}</div><div class="archive-info"><span class="document-type">${v.report.settings.type==="daily"?"일간 레포트":"주간 레포트"}</span><h3>${scopeName(v.report.settings.site)}</h3><p>${periodOf(v.report)} <span>·</span> ${html(v.code)}</p><small>발행 ${html(v.at)} · ${html(zoneOf(v.report))}</small></div><button class="plain-btn" data-open="${html(v.id)}">${icon("preview")}문서 열기</button></div>`).join(""):`<div class="empty-state"><div class="empty-illustration">${icon(kept.length?"search":"archive")}</div><h3>${kept.length?"검색 결과가 없습니다":"아직 발행한 레포트가 없습니다"}</h3><p>${kept.length?"다른 발전소 이름이나 기간으로 검색해 보세요.":"레포트 작업실에서 발행한 문서가 이곳에 저장됩니다.<br>PDF 인쇄와 근거 CSV 다운로드도 함께 제공됩니다."}</p><button class="${kept.length?"plain-btn":"primary"}" data-action="${kept.length?"clear-search":"new"}">${icon(kept.length?"reset":"fileplus")}${kept.length?"검색 초기화":"첫 레포트 만들기"}</button></div>`;
 }
-function latestInspection(){return events().at(-1)??null;}
+function archive(){
+  work.innerHTML=`<section class="ledger"><div class="ledger-heading"><div><h2>발행한 레포트 <span class="count-pill">${reports().length}</span></h2><p class="muted">이 브라우저에 저장된 문서를 확인하세요.</p></div><button class="primary compact" data-action="new">${icon("plus")}새 레포트</button></div><div class="archive-controls"><label class="search-field">${icon("search")}<span class="sr-only">보관함 검색</span><input type="search" id="archive-search" placeholder="발전소, 보고 기간, 문서 번호 검색" value="${html(archiveQuery)}"></label><label class="archive-type"><span class="sr-only">레포트 종류 필터</span><select id="archive-type">${[["all","모든 레포트"],["daily","일간 레포트"],["weekly","주간 레포트"]].map(([value,label])=>`<option value="${value}" ${value===archiveType?"selected":""}>${label}</option>`).join("")}</select></label></div><p class="result-count" id="archive-result-count" role="status" aria-live="polite"></p><div class="archive-list" id="archive-results"></div></section><p class="storage-note">${icon("shield")}문서는 현재 브라우저에 저장됩니다. 중요한 기록은 PDF 또는 CSV로 보관하세요.</p>`;
+  archiveRows();
+}
+function renderOverview(){
+  const report=buildReport({...DEFAULT_SETTINGS,site:"all"},[]), count=reports().length;
+  $("#archive-count").textContent=count;
+  $("#review-count").textContent=sitesNeedingReview().length;
+  $("#overview").innerHTML=`<a class="stat-card" href="#sites"><span class="stat-icon green">${icon("grid")}</span><div><span class="stat-label">관리 발전소</span><strong>${Object.keys(SITES).length}<small>개소</small></strong><span class="stat-note">모든 현장을 한눈에</span></div></a><a class="stat-card" href="#sites"><span class="stat-icon amber">${icon("alert")}</span><div><span class="stat-label">확인이 필요한 현장</span><strong>${sitesNeedingReview().length}<small>개소</small></strong><span class="stat-note">수신 지연 1 · 변동 주의 1</span></div></a><div class="stat-card"><span class="stat-icon mint">${icon("activity")}</span><div><span class="stat-label">관측 데이터 확보율</span><strong>${report.rate}<small>%</small></strong><span class="stat-note">전체 ${report.total}건 중 ${report.received}건 수신</span></div></div><a class="stat-card" href="#archive"><span class="stat-icon blue">${icon("archive")}</span><div><span class="stat-label">보관된 레포트</span><strong>${count}<small>개</small></strong><span class="stat-note">이 브라우저에 저장된 문서</span></div></a>`;
+}
+function latestInspection(){return events().filter(entry=>entry.day===LAST_DAY).at(-1)??null;}
 function emptyInspection(){return {owner:"",memo:"",nextCheck:"",checks:[false,false,false]};}
 function inspector(){
   const latest=latestInspection(),draft=draftInspection??latest??emptyInspection();
@@ -227,17 +251,17 @@ function inspector(){
     <label class="field">다음 확인 사항 <small>(선택)</small><input type="text" id="next-check" maxlength="100" aria-describedby="next-check-hint" placeholder="예: 07:15 이후 데이터 재수신 여부 확인" value="${html(draft.nextCheck)}"></label>
     <p id="next-check-hint" class="hint">저장하면 레포트 첫머리에 담당자와 함께 표시됩니다.</p><p id="inspection-error" role="alert"></p>
     <div class="action-group">${latest?.status==="점검 기록 완료"?"":`<button class="plain-btn" type="button" data-action="start-inspection">${latest?"진행 내용 저장":"점검 시작"}</button>`}<button class="primary compact" type="submit">점검 기록 완료</button></div></form></div>
-    ${latest?`<div class="inspection-result"><div><h3>${html(latest.status)} · 데이터 ${html(SITES.B.label)}</h3><p><b>다음 확인 사항</b> · ${html(latest.nextCheck||"미입력")}</p><p>담당자 · ${html(latest.owner)} / ${html(latest.at)} (UTC+8)</p><p>조치 메모 · ${html(latest.memo||"미입력")}</p></div><button class="plain-btn" data-site-report="B">이 점검으로 인수인계 레포트 작성 ${icon("arrow")}</button></div>`:""}</section>`;
+    ${latest?`<div class="inspection-result"><div><h3>${html(latest.status)} · 데이터 ${html(SITES.B.label)}</h3><p><b>다음 확인 사항</b> · ${html(latest.nextCheck||"미입력")}</p><p>담당자 · ${html(latest.owner)} / ${html(latest.at)} (${html(latest.timeZoneLabel||"UTC+8")})</p><p>조치 메모 · ${html(latest.memo||"미입력")}</p></div><button class="plain-btn" data-site-report="B">이 점검으로 인수인계 레포트 작성 </button></div>`:""}</section>`;
 }
 function siteDetail(site){
   const report=buildReport({...DEFAULT_SETTINGS,site},[]);
   return `<section class="ledger" id="site-detail"><div class="ledger-heading"><div><p class="eyebrow">${scopeName(site)}</p><h2>일사량 상세</h2></div><button class="icon-btn" data-action="close-detail" aria-label="상세 닫기">${icon("close")}</button></div>
-    <div class="detail-body"><div class="detail-meta"><span>2026.11.09 · 입력 수신 07:55 · 예측 기준 08:00 (UTC+8)</span>${legend()}</div>${chart(report.series)}<table class="doc-table"><thead><tr><th>대상 시각</th><th>관측 GHI (W/m²)</th><th>예측 GHI (W/m²)</th><th>상태</th></tr></thead><tbody>${report.rows.map(r=>`<tr><td>${r.hour}</td><td>${numberText(r.observed)}</td><td>${numberText(r.predicted)}</td><td>${r.state}</td></tr>`).join("")}</tbody></table><button class="primary compact" data-site-report="${site}">이 현장 레포트 작성 ${icon("arrow")}</button></div></section>`;
+    <div class="detail-body"><div class="detail-meta"><span>${shortDate(LAST_DAY)} · 입력 수신 07:55 · 예측 기준 08:00 (${TIME_ZONE_LABEL})</span>${legend()}</div>${chart(report.series)}<table class="doc-table"><thead><tr><th>대상 시각</th><th>관측 GHI (W/m²)</th><th>예측 GHI (W/m²)</th><th>상태</th></tr></thead><tbody>${report.rows.map(r=>`<tr><td>${r.hour}</td><td>${numberText(r.observed)}</td><td>${numberText(r.predicted)}</td><td>${r.state}</td></tr>`).join("")}</tbody></table><button class="primary compact" data-site-report="${site}">이 현장 레포트 작성 </button></div></section>`;
 }
 function sites(){
   const latest=latestInspection(),need=sitesNeedingReview();
   const keys=shownSites==="need"?need:[...need,...Object.keys(SITES).filter(key=>!need.includes(key))];
-  work.innerHTML=`<section class="ledger"><div class="ledger-heading"><h2>발전소 현황</h2><span class="muted">2026.11.09 · UTC+8</span></div><div class="site-filters">${[["all",`전체 ${Object.keys(SITES).length}`],["need",`확인 필요 ${need.length}`]].map(([value,label])=>`<button class="plain-btn" data-filter="${value}" aria-pressed="${shownSites===value}">${label}</button>`).join("")}</div><div class="site-list">${keys.map(key=>`<div class="site-row"><div class="site-id">${key}</div><div><strong>${SITES[key].name}</strong><p>${SITES[key].detail}</p></div><div><span class="status ${key}">${SITES[key].label}</span><p>${key==="B"?`${html(latest?.owner||"담당자 미지정")} · ${html(latest?.status||"미처리")}`:SITES[key].owner}</p></div><button class="plain-btn" data-detail="${key}">${key==="B"?"수신 상태 점검":"예측 상세 보기"} ${icon("arrow")}</button></div>`).join("")}</div></section>${detailSite==="B"?inspector():detailSite?siteDetail(detailSite):""}`;
+  work.innerHTML=`<section class="ledger"><div class="ledger-heading"><div><h2>발전소 현황</h2><p class="muted">우선 확인이 필요한 현장부터 표시합니다.</p></div><span class="paper-size">총 3개소</span></div><div class="site-filters">${[["all",`전체 ${Object.keys(SITES).length}`],["need",`확인 필요 ${need.length}`]].map(([value,label])=>`<button class="plain-btn" data-filter="${value}" aria-pressed="${shownSites===value}">${label}</button>`).join("")}</div><div class="site-list">${keys.map(key=>`<div class="site-row"><div class="site-id ${key}">${icon("sun")}<span>${key}</span></div><div><strong>${SITES[key].name}</strong><p>${SITES[key].detail}</p></div><div><span class="status ${key}">${SITES[key].label}</span><p>${key==="B"?`${html(latest?.owner||"담당자 미지정")} · ${html(latest?.status||"미처리")}`:SITES[key].owner}</p></div><button class="plain-btn" data-detail="${key}">${key==="B"?"수신 상태 점검":"예측 상세 보기"} </button></div>`).join("")}</div></section>${detailSite==="B"?inspector():detailSite?siteDetail(detailSite):""}`;
 }
 function readDraft(){
   if(!$("#inspection-form"))return;
@@ -253,7 +277,7 @@ function saveInspection(status){
   const latest=latestInspection();
   const memo=d.memo.trim(),nextCheck=d.nextCheck.trim();
   if(latest && latest.status===status && latest.owner===d.owner && latest.memo===memo && (latest.nextCheck??"")===nextCheck && latest.checks.every((v,i)=>v===d.checks[i])){notice("같은 내용의 점검 기록이 이미 있습니다.");return;}
-  saveRecord("event/",{...d,memo,nextCheck,status,id:uid(),at:timeStamp(),issued:Date.now(),day:LAST_DAY});
+  saveRecord("event/",{...d,memo,nextCheck,status,id:uid(),at:timeStamp(),timeZoneLabel:TIME_ZONE_LABEL,issued:Date.now(),day:LAST_DAY});
   draftInspection=null;sites();notice(storageAvailable?"점검 기록을 저장했습니다.":"현재 탭에 점검 기록을 저장했습니다.");
   $(".inspection-result").scrollIntoView({block:"nearest"});
 }
@@ -262,9 +286,10 @@ function renderRoute(navigate=false){
   const view=["studio","sites","archive"].includes(page)?page:"studio",previousDetail=detailSite;
   observer.disconnect();currentView=view;
   detailSite=view==="sites" && Object.hasOwn(SITES,site)?site:null;
-  const meta={studio:["OPERATIONS / REPORT DESK","레포트 작업실","현장의 일사량과 점검 기록을 한 장의 운영 레포트로 정리하세요."],
-    sites:["OPERATIONS / FIELD MONITOR","현장 현황","확인이 필요한 발전소를 살펴보고 담당자와 조치 내용을 기록하세요."],
-    archive:["OPERATIONS / ARCHIVE","레포트 보관함","이 브라우저에서 발행한 레포트를 다시 열거나 인쇄할 수 있습니다."]}[view];
+  const meta={studio:["REPORT STUDIO","레포트 작업실","관측 데이터부터 인수인계까지, 오늘의 운영 기록을 완성하세요."],
+    sites:["FIELD MONITOR","현장 현황","발전소별 수신 상태와 일사량을 확인하고 점검 이력을 남기세요."],
+    archive:["REPORT ARCHIVE","레포트 보관함","발행한 운영 레포트를 검색하고, 필요한 문서를 다시 열어 보세요."]}[view];
+  $("#breadcrumb-page").textContent=meta[1];renderOverview();
   $("#eyebrow").textContent=meta[0];$("#page-title").textContent=meta[1];$("#intro").textContent=meta[2];document.title=`HelioCone · ${meta[1]}`;
   document.querySelectorAll("[data-nav]").forEach(el=>{if(el.dataset.nav===view)el.setAttribute("aria-current","page");else el.removeAttribute("aria-current");});
   ({studio,sites,archive})[view]();
@@ -280,6 +305,8 @@ function renderRoute(navigate=false){
 function go(view){if(location.hash===`#${view}`)renderRoute(true);else location.hash=view;}
 document.addEventListener("input",e=>{
   const field=e.target;
+  if(field.id==="archive-search"){archiveQuery=field.value;archiveRows();return;}
+  if(field.id==="archive-type"){archiveType=field.value;archiveRows();return;}
   if(field.closest("#config")){
     settings[field.name]=field.type==="checkbox"?field.checked:field.value;
     refreshPreview();
@@ -321,6 +348,7 @@ document.addEventListener("click",e=>{
   if(action==="issue")issueReport();
   if(action==="csv"&&currentRead?.issue)exportCSV(currentRead.report);
   if(action==="print"&&currentRead?.issue){window.print();}
+  if(action==="clear-search"){archiveQuery="";archiveType="all";archive();$("#archive-search").focus();}
   if(action==="new"){settings={...DEFAULT_SETTINGS};zoom.preview="auto";go("studio");}
   if(open){const entry=reports().find(v=>v.id===open);if(entry){zoom.reader=100;openReader(entry.report,entry);}}
   if(filter){shownSites=filter;sites();}
@@ -344,8 +372,31 @@ window.addEventListener("hashchange",()=>{if(reader.open)reader.close();renderRo
 window.addEventListener("storage",e=>{
   if(e.key&&!e.key.startsWith(STORAGE))return;
   if(e.key && e.newValue===null)volatileStore.delete(e.key);
+  renderOverview();
   if(currentView==="archive")archive();
   else if(currentView==="studio"){showPrioritySite();refreshPreview();}
   else sites();
 });
+function updateClock(){
+  const now=new Date(), day=todayInSeoul();
+  const clock=$("#current-time"), date=$("#current-date");
+  clock.textContent=new Intl.DateTimeFormat("en-GB",{timeZone:TIME_ZONE,hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false}).format(now);
+  clock.dateTime=now.toISOString();
+  date.textContent=new Intl.DateTimeFormat("ko-KR",{timeZone:TIME_ZONE,year:"numeric",month:"long",day:"numeric",weekday:"short"}).format(now);
+  date.dateTime=day;
+  if(day!==LAST_DAY){
+    const wasToday=settings.day===LAST_DAY;
+    LAST_DAY=day;FIRST_DAY=shiftDay(day,-14);DEFAULT_SETTINGS.day=day;
+    if(wasToday)settings.day=day;
+    if(currentView==="studio"){
+      $("#config [name=day]").max=day;
+      $("#config [name=day]").value=settings.day;
+      showPrioritySite();refreshPreview();
+    }else if(currentView==="sites"){readDraft();sites();}
+    renderOverview();
+  }
+}
+updateClock();setInterval(updateClock,1000);
+window.addEventListener("pageshow",updateClock);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)updateClock();});
 storageWarning();renderRoute();

@@ -3,44 +3,43 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f8f6ef">
-  <meta name="description" content="가상 태양광 현장의 일사량과 점검 기록을 A4 운영 레포트로 작성하는 HelioCone 운영 데스크">
+  <meta name="theme-color" content="#133e35">
+  <meta name="description" content="태양광 현장의 일사량과 점검 기록을 한곳에서. HelioCone 태양광 운영 워크스페이스 — 가상 데이터 데모.">
   <title>HelioCone · 레포트 작업실</title>
   <link rel="icon" href="mark.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="desk.css?v=3">
+  <link rel="stylesheet" href="desk.css?v=6">
   <script defer src="model.js?v=4"></script>
-  <script defer src="desk.js?v=5"></script>
+  <script defer src="desk.js?v=6"></script>
 </head>
 <body>
   <a class="skip" href="#content">본문으로 이동</a>
-  <header class="mast">
-    <div class="wrap mast-inner">
-      <div class="brand"><img src="mark.svg" alt=""><span>HelioCone</span></div>
-      <nav aria-label="운영 데스크 메뉴">
-        <a href="#studio" data-nav="studio"><span data-icon="document"></span>레포트 작업실</a>
-        <a href="#sites" data-nav="sites"><span data-icon="grid"></span>현장 현황</a>
-        <a href="#archive" data-nav="archive"><span data-icon="archive"></span>보관함</a>
-      </nav>
-      <span class="demo"><i></i>가상 데이터</span>
+  <aside class="sidebar" aria-label="워크스페이스">
+    <a class="brand" href="#studio" aria-label="HelioCone 레포트 작업실"><img src="mark.svg" width="36" height="36" alt=""><span>HelioCone<span class="brand-caption">SOLAR OPERATIONS</span></span></a>
+    <div class="workspace-switch"><span class="workspace-avatar">S</span><div><strong>SunChip</strong><span>운영 워크스페이스</span></div><span class="workspace-label">DEMO</span></div>
+    <p class="nav-label">WORKSPACE</p>
+    <nav aria-label="운영 데스크 메뉴">
+      <a href="#studio" data-nav="studio" aria-label="레포트 작업실"><span data-icon="document"></span><span>레포트 작업실</span></a>
+      <a href="#sites" data-nav="sites" aria-label="현장 현황"><span data-icon="grid"></span><span>현장 현황</span><span class="nav-count" id="review-count">2</span></a>
+      <a href="#archive" data-nav="archive" aria-label="보관함"><span data-icon="archive"></span><span>보관함</span><span class="nav-count" id="archive-count">0</span></a>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="demo-note"><span data-icon="sun"></span><strong>FIELD NOTES, CLEARER.</strong><p>세 개의 현장.<br>하나의 운영 기록.</p><span class="demo-note-tag">가상 데이터 체험 공간</span></div>
+      <div class="team-profile"><span class="team-avatar">SC</span><div><strong>Team SunChip</strong><span>태양광 운영팀</span></div></div>
     </div>
-  </header>
-  <main id="content" class="wrap" tabindex="-1">
-    <div class="hero">
-      <div><p class="eyebrow" id="eyebrow">OPERATIONS / REPORT DESK</p>
-        <h1 id="page-title">레포트 작업실</h1>
-        <p id="intro">현장의 일사량과 점검 기록을 한 장의 운영 레포트로 정리하세요.</p>
-      </div>
-      <img class="field-art" src="solar-field.png" alt="">
-    </div>
-    <p id="storage-warning" class="warning" hidden role="status"></p>
-    <section id="workspace"></section>
-    <noscript>레포트를 작성하려면 브라우저에서 자바스크립트를 켜 주세요.</noscript>
-  </main>
-  <footer class="site-foot wrap"><span>HelioCone <b>·</b> Team SunChip</span><button type="button" class="plain-btn" data-action="reset-demo">시연 초기화</button><span>운영 시연 데이터 · UTC+8</span></footer>
-  <dialog id="reader" aria-labelledby="reader-title">
-    <div class="reader-head"><div><p class="eyebrow" id="reader-kind"></p><h2 id="reader-title"></h2></div><button class="icon-btn" id="close-reader" aria-label="문서 닫기"><span data-icon="close"></span></button></div>
-    <div id="reader-tools"></div><div class="paper-scroll reader-scroll" id="reader-scroll" tabindex="0" aria-label="레포트 문서"></div>
-  </dialog>
+  </aside>
+  <div class="app-shell">
+    <header class="topbar"><div class="breadcrumb"><span data-icon="grid"></span><span>워크스페이스</span><span class="breadcrumb-slash">/</span><strong id="breadcrumb-page">레포트 작업실</strong></div><span class="demo"><span data-icon="flask"></span>가상 데이터</span></header>
+    <main id="content" class="wrap" tabindex="-1">
+      <div class="hero"><div><p class="eyebrow" id="eyebrow">REPORT STUDIO</p><h1 id="page-title">레포트 작업실</h1><p id="intro">현장의 하루를 정리하고, 다음 운영을 준비하세요.</p></div><svg class="solar-signature" viewBox="0 0 480 240" aria-hidden="true"><defs><radialGradient id="sun-glow"><stop stop-color="#d8ed83" stop-opacity=".24"/><stop offset="1" stop-color="#d8ed83" stop-opacity="0"/></radialGradient><pattern id="panel-grid" width="27" height="28" patternUnits="userSpaceOnUse" patternTransform="skewX(-28)"><path d="M0 0H27V28" fill="none" stroke="#c5e790" stroke-width=".7" opacity=".28"/></pattern></defs><circle cx="258" cy="125" r="150" fill="url(#sun-glow)"/><g fill="none" stroke="#bddc91" stroke-width=".7"><ellipse cx="270" cy="130" rx="142" ry="80" transform="rotate(-22 270 130)" opacity=".25"/><ellipse cx="270" cy="130" rx="185" ry="105" transform="rotate(-22 270 130)" opacity=".16"/><path d="M35 190H470M270 0v240" opacity=".13"/><path d="M30 240 140 180h270l60 60" opacity=".35"/></g><path d="M30 240 140 180h270l60 60z" fill="url(#panel-grid)"/><circle class="solar-core" cx="270" cy="114" r="41" fill="#d5ef9d"/><circle cx="270" cy="114" r="51" fill="none" stroke="#d5ef9d" stroke-width=".6" opacity=".4"/><circle cx="391" cy="54" r="4" fill="#d5ef9d"/><path d="M270 165v14m-7-7h14" stroke="#d5ef9d" opacity=".6"/></svg><div class="reference-date"><span class="clock-label">SEOUL <span>·</span> KST / UTC+9</span><time id="current-time" aria-label="한국 현재 시간">--:--:--</time><time id="current-date">오늘 날짜</time></div></div>
+      <section id="overview" class="overview" aria-label="운영 요약"></section>
+      <p id="storage-warning" class="warning" hidden role="status"></p>
+      <section id="workspace" aria-labelledby="page-title"></section>
+      <noscript>레포트를 작성하려면 브라우저에서 자바스크립트를 켜 주세요.</noscript>
+    </main>
+    <footer class="site-foot wrap"><span>© HelioCone <b>·</b> Team SunChip</span><button type="button" class="text-btn" data-action="reset-demo"><span data-icon="reset"></span>시연 초기화</button><span>가상 운영 데이터 · 브라우저에 저장</span></footer>
+  </div>
+  <dialog id="reader" aria-labelledby="reader-title"><div class="reader-head"><div><p class="eyebrow" id="reader-kind"></p><h2 id="reader-title"></h2></div><button class="icon-btn" id="close-reader" aria-label="문서 닫기"><span data-icon="close"></span></button></div><div id="reader-tools"></div><div class="paper-scroll reader-scroll" id="reader-scroll" tabindex="0" aria-label="레포트 문서"></div></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
   <div id="print-document"></div>
-</body></html>
+</body>
+</html>
