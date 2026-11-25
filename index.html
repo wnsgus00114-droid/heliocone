@@ -7,14 +7,42 @@
   <meta name="description" content="태양광 현장의 일사량과 점검 기록을 한곳에서. HelioCone 태양광 운영 워크스페이스 — 가상 데이터 데모.">
   <title>HelioCone · 레포트 작업실</title>
   <link rel="icon" href="mark.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="desk.css?v=6">
+  <link rel="stylesheet" href="desk.css?v=7">
+  <link rel="stylesheet" href="entry.css?v=1">
   <script defer src="model.js?v=4"></script>
-  <script defer src="desk.js?v=6"></script>
+  <script defer src="desk.js?v=7"></script>
+  <script defer src="entry.js?v=1"></script>
 </head>
-<body>
+<body data-view="home">
   <a class="skip" href="#content">본문으로 이동</a>
+  <section class="entry" id="entry" aria-labelledby="entry-title">
+    <canvas id="solar-scene" aria-hidden="true"></canvas>
+    <div class="entry-shade" aria-hidden="true"></div>
+    <header class="entry-nav">
+      <a class="entry-brand" href="#home" aria-label="HelioCone 홈"><img src="mark.svg" alt="" width="34" height="34"><span>HelioCone<span class="brand-dot" aria-hidden="true">.</span></span></a>
+      <span class="entry-nav-caption">SOLAR OPERATIONS, REFRAMED.</span>
+      <a class="entry-access" href="#studio">워크스페이스 입장 <span data-icon="grid"></span></a>
+    </header>
+    <main class="entry-content" id="entry-content" tabindex="-1">
+      <div class="entry-caption"><span class="entry-cross" aria-hidden="true">+</span> A SUNCHIP EXPERIENCE <span class="entry-edition">TEAM SUNCHIP</span></div>
+      <h1 id="entry-title">THE SOLAR<br><span>PERSPECTIVE.</span></h1>
+      <div class="entry-description"><p>빛을 관측하고, 변화를 기록하다.</p><p>태양광 현장의 오늘을 이해하는<br> 새로운 운영 워크스페이스.</p></div>
+      <a class="entry-cta" href="#studio"><span>워크스페이스 시작</span><span class="cta-glyph" data-icon="plus"></span></a>
+      <p class="entry-cta-note">레포트 작성 · 현장 점검 · 기록 보관</p>
+    </main>
+    <div class="scene-label" aria-hidden="true"><span class="scene-cross">+</span><span>PHOTOVOLTAIC ARRAY<br>LIGHT &amp; SHADOW STUDY</span></div>
+    <section class="light-console" aria-label="태양광 장면 조절">
+      <div class="light-console-title"><span class="light-symbol" data-icon="sun" aria-hidden="true"></span><div><h2>빛을 움직여 보세요.</h2><p>시간대에 따라 달라지는 태양광 장면</p></div></div>
+      <div class="light-range"><div class="light-range-heading"><label for="light-time">장면 시간</label><output id="light-value" for="light-time">14:00</output></div><input id="light-time" type="range" min="6" max="18" value="14" step="0.25" aria-valuetext="14시, 낮 장면"><div class="light-range-labels"><span>06:00</span><span>12:00</span><span>18:00</span></div></div>
+      <div class="light-presets" aria-label="장면 프리셋"><button type="button" data-light="7" aria-pressed="false">아침</button><button type="button" data-light="14" aria-pressed="true">낮</button><button type="button" data-light="17.5" aria-pressed="false">노을</button></div>
+      <div class="scene-views" aria-label="장면 시점"><button type="button" id="scene-view" aria-pressed="false" title="시점 바꾸기"><span data-icon="expand"></span><span>시점 전환</span></button></div>
+    </section>
+    <footer class="entry-footer"><span>© HELIOCONE · TEAM SUNCHIP</span><span class="entry-date"><time data-today></time><b>KST</b><time data-clock></time></span><span class="entry-demo">가상 현장 시각화 · DEMO</span></footer>
+    <noscript><p class="entry-noscript">워크스페이스를 이용하려면 자바스크립트를 켜 주세요.</p></noscript>
+  </section>
+  <div id="operations" hidden>
   <aside class="sidebar" aria-label="워크스페이스">
-    <a class="brand" href="#studio" aria-label="HelioCone 레포트 작업실"><img src="mark.svg" width="36" height="36" alt=""><span>HelioCone<span class="brand-caption">SOLAR OPERATIONS</span></span></a>
+    <a class="brand" href="#home" aria-label="HelioCone 인트로로 돌아가기"><img src="mark.svg" width="36" height="36" alt=""><span>HelioCone<span class="brand-caption">SOLAR OPERATIONS</span></span></a>
     <div class="workspace-switch"><span class="workspace-avatar">S</span><div><strong>SunChip</strong><span>운영 워크스페이스</span></div><span class="workspace-label">DEMO</span></div>
     <p class="nav-label">WORKSPACE</p>
     <nav aria-label="운영 데스크 메뉴">
@@ -28,7 +56,7 @@
     </div>
   </aside>
   <div class="app-shell">
-    <header class="topbar"><div class="breadcrumb"><span data-icon="grid"></span><span>워크스페이스</span><span class="breadcrumb-slash">/</span><strong id="breadcrumb-page">레포트 작업실</strong></div><span class="demo"><span data-icon="flask"></span>가상 데이터</span></header>
+    <header class="topbar"><div class="breadcrumb"><span data-icon="grid"></span><span>워크스페이스</span><span class="breadcrumb-slash">/</span><strong id="breadcrumb-page">레포트 작업실</strong></div><div class="topbar-end"><a class="home-link" href="#home">인트로 보기</a><span class="demo"><span data-icon="flask"></span>가상 데이터</span></div></header>
     <main id="content" class="wrap" tabindex="-1">
       <div class="hero"><div><p class="eyebrow" id="eyebrow">REPORT STUDIO</p><h1 id="page-title">레포트 작업실</h1><p id="intro">현장의 하루를 정리하고, 다음 운영을 준비하세요.</p></div><svg class="solar-signature" viewBox="0 0 480 240" aria-hidden="true"><defs><radialGradient id="sun-glow"><stop stop-color="#d8ed83" stop-opacity=".24"/><stop offset="1" stop-color="#d8ed83" stop-opacity="0"/></radialGradient><pattern id="panel-grid" width="27" height="28" patternUnits="userSpaceOnUse" patternTransform="skewX(-28)"><path d="M0 0H27V28" fill="none" stroke="#c5e790" stroke-width=".7" opacity=".28"/></pattern></defs><circle cx="258" cy="125" r="150" fill="url(#sun-glow)"/><g fill="none" stroke="#bddc91" stroke-width=".7"><ellipse cx="270" cy="130" rx="142" ry="80" transform="rotate(-22 270 130)" opacity=".25"/><ellipse cx="270" cy="130" rx="185" ry="105" transform="rotate(-22 270 130)" opacity=".16"/><path d="M35 190H470M270 0v240" opacity=".13"/><path d="M30 240 140 180h270l60 60" opacity=".35"/></g><path d="M30 240 140 180h270l60 60z" fill="url(#panel-grid)"/><circle class="solar-core" cx="270" cy="114" r="41" fill="#d5ef9d"/><circle cx="270" cy="114" r="51" fill="none" stroke="#d5ef9d" stroke-width=".6" opacity=".4"/><circle cx="391" cy="54" r="4" fill="#d5ef9d"/><path d="M270 165v14m-7-7h14" stroke="#d5ef9d" opacity=".6"/></svg><div class="reference-date"><span class="clock-label">SEOUL <span>·</span> KST / UTC+9</span><time id="current-time" aria-label="한국 현재 시간">--:--:--</time><time id="current-date">오늘 날짜</time></div></div>
       <section id="overview" class="overview" aria-label="운영 요약"></section>
@@ -37,6 +65,7 @@
       <noscript>레포트를 작성하려면 브라우저에서 자바스크립트를 켜 주세요.</noscript>
     </main>
     <footer class="site-foot wrap"><span>© HelioCone <b>·</b> Team SunChip</span><button type="button" class="text-btn" data-action="reset-demo"><span data-icon="reset"></span>시연 초기화</button><span>가상 운영 데이터 · 브라우저에 저장</span></footer>
+  </div>
   </div>
   <dialog id="reader" aria-labelledby="reader-title"><div class="reader-head"><div><p class="eyebrow" id="reader-kind"></p><h2 id="reader-title"></h2></div><button class="icon-btn" id="close-reader" aria-label="문서 닫기"><span data-icon="close"></span></button></div><div id="reader-tools"></div><div class="paper-scroll reader-scroll" id="reader-scroll" tabindex="0" aria-label="레포트 문서"></div></dialog>
   <div id="toast" role="status" aria-live="polite"></div>

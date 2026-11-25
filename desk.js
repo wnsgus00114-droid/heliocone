@@ -283,8 +283,19 @@ function saveInspection(status){
 }
 function renderRoute(navigate=false){
   const [page,site]=location.hash.slice(1).split("/");
-  const view=["studio","sites","archive"].includes(page)?page:"studio",previousDetail=detailSite;
+  const view=page==="content" && ["studio","sites","archive"].includes(currentView)?currentView:["studio","sites","archive"].includes(page)?page:"home",previousDetail=detailSite;
   observer.disconnect();currentView=view;
+  document.body.dataset.view=view;
+  $("#entry").hidden=view!=="home";
+  $("#operations").hidden=view==="home";
+  $(".skip").href=view==="home"?"#entry-content":"#content";
+  document.dispatchEvent(new CustomEvent("heliocone:view",{detail:view}));
+  if(view==="home"){
+    detailSite=null;
+    document.title="HelioCone · The Solar Perspective";
+    if(navigate){window.scrollTo(0,0);$("#entry-content").focus({preventScroll:true});}
+    return;
+  }
   detailSite=view==="sites" && Object.hasOwn(SITES,site)?site:null;
   const meta={studio:["REPORT STUDIO","레포트 작업실","관측 데이터부터 인수인계까지, 오늘의 운영 기록을 완성하세요."],
     sites:["FIELD MONITOR","현장 현황","발전소별 수신 상태와 일사량을 확인하고 점검 이력을 남기세요."],
@@ -375,7 +386,7 @@ window.addEventListener("storage",e=>{
   renderOverview();
   if(currentView==="archive")archive();
   else if(currentView==="studio"){showPrioritySite();refreshPreview();}
-  else sites();
+  else if(currentView==="sites")sites();
 });
 function updateClock(){
   const now=new Date(), day=todayInSeoul();
@@ -384,6 +395,8 @@ function updateClock(){
   clock.dateTime=now.toISOString();
   date.textContent=new Intl.DateTimeFormat("ko-KR",{timeZone:TIME_ZONE,year:"numeric",month:"long",day:"numeric",weekday:"short"}).format(now);
   date.dateTime=day;
+  document.querySelectorAll("[data-clock]").forEach(el=>{el.textContent=clock.textContent;el.dateTime=clock.dateTime;});
+  document.querySelectorAll("[data-today]").forEach(el=>{el.textContent=shortDate(day);el.dateTime=day;});
   if(day!==LAST_DAY){
     const wasToday=settings.day===LAST_DAY;
     LAST_DAY=day;FIRST_DAY=shiftDay(day,-14);DEFAULT_SETTINGS.day=day;
