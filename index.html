@@ -8,10 +8,10 @@
   <title>HelioCone · 레포트 작업실</title>
   <link rel="icon" href="mark.svg" type="image/svg+xml">
   <link rel="stylesheet" href="desk.css?v=7">
-  <link rel="stylesheet" href="entry.css?v=1">
+  <link rel="stylesheet" href="entry.css?v=3">
   <script defer src="model.js?v=4"></script>
   <script defer src="desk.js?v=7"></script>
-  <script defer src="entry.js?v=1"></script>
+  <script defer src="entry.js?v=3"></script>
 </head>
 <body data-view="home">
   <a class="skip" href="#content">본문으로 이동</a>
@@ -25,18 +25,12 @@
     </header>
     <main class="entry-content" id="entry-content" tabindex="-1">
       <div class="entry-caption"><span class="entry-cross" aria-hidden="true">+</span> A SUNCHIP EXPERIENCE <span class="entry-edition">TEAM SUNCHIP</span></div>
-      <h1 id="entry-title">THE SOLAR<br><span>PERSPECTIVE.</span></h1>
+      <h1 id="entry-title"><span class="title-opening">THE SOLAR</span><br><span class="title-finish">PERSPECTIVE.</span></h1>
       <div class="entry-description"><p>빛을 관측하고, 변화를 기록하다.</p><p>태양광 현장의 오늘을 이해하는<br> 새로운 운영 워크스페이스.</p></div>
-      <a class="entry-cta" href="#studio"><span>워크스페이스 시작</span><span class="cta-glyph" data-icon="plus"></span></a>
+      <div class="entry-actions"><a class="entry-cta" href="#studio"><span>워크스페이스 시작</span><span class="cta-glyph" data-icon="plus"></span></a></div>
       <p class="entry-cta-note">레포트 작성 · 현장 점검 · 기록 보관</p>
     </main>
     <div class="scene-label" aria-hidden="true"><span class="scene-cross">+</span><span>PHOTOVOLTAIC ARRAY<br>LIGHT &amp; SHADOW STUDY</span></div>
-    <section class="light-console" aria-label="태양광 장면 조절">
-      <div class="light-console-title"><span class="light-symbol" data-icon="sun" aria-hidden="true"></span><div><h2>빛을 움직여 보세요.</h2><p>시간대에 따라 달라지는 태양광 장면</p></div></div>
-      <div class="light-range"><div class="light-range-heading"><label for="light-time">장면 시간</label><output id="light-value" for="light-time">14:00</output></div><input id="light-time" type="range" min="6" max="18" value="14" step="0.25" aria-valuetext="14시, 낮 장면"><div class="light-range-labels"><span>06:00</span><span>12:00</span><span>18:00</span></div></div>
-      <div class="light-presets" aria-label="장면 프리셋"><button type="button" data-light="7" aria-pressed="false">아침</button><button type="button" data-light="14" aria-pressed="true">낮</button><button type="button" data-light="17.5" aria-pressed="false">노을</button></div>
-      <div class="scene-views" aria-label="장면 시점"><button type="button" id="scene-view" aria-pressed="false" title="시점 바꾸기"><span data-icon="expand"></span><span>시점 전환</span></button></div>
-    </section>
     <footer class="entry-footer"><span>© HELIOCONE · TEAM SUNCHIP</span><span class="entry-date"><time data-today></time><b>KST</b><time data-clock></time></span><span class="entry-demo">가상 현장 시각화 · DEMO</span></footer>
     <noscript><p class="entry-noscript">워크스페이스를 이용하려면 자바스크립트를 켜 주세요.</p></noscript>
   </section>
