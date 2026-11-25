@@ -3,6 +3,14 @@
 태양광 운영 레포트 작업실, 현장 점검, 문서 보관함을 제공하는 정적 웹앱입니다.
 실측 데이터 연결 없이 **가상 시연 데이터**로 동작합니다.
 
+## 수정본 전달 및 원본 적용
+
+이 저장소는 [agliotomato/heliocone](https://github.com/agliotomato/heliocone)의 UI/UX 개선본입니다. `main` 브랜치에 자동 재생 인트로, 새 운영 워크스페이스, 현재 한국 날짜와 시계가 모두 포함되어 있습니다.
+
+원본 제작자는 [원본과 변경 사항 비교](https://github.com/agliotomato/heliocone/compare/main...wnsgus00114-droid:heliocone:main)에서 내용을 검토한 뒤 원본 `main`에 반영할 수 있습니다. 기존 Git 기록을 유지했으며, 원본의 `main` 루트를 사용하는 GitHub Pages 배포 구조에 맞춰져 있습니다.
+
+파일로 적용할 경우 `index.html`, `desk.css`, `desk.js`, `model.js`, `mark.svg`와 새로 추가된 `entry.css`, `entry.js`를 함께 반영해 주세요. 별도 설치나 빌드는 필요하지 않습니다. 원본 저장소와 공개 사이트는 이 포크에 저장하는 것만으로 변경되지 않습니다.
+
 ## 실행
 
 프로젝트 폴더에서 다음 명령을 실행하고 `http://127.0.0.1:4173/#home`를 엽니다.
